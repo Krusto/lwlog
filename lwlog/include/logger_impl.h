@@ -163,6 +163,14 @@ namespace lwlog
 
 	template<typename BufferLimits, typename LogExecutionPolicy, typename FlushPolicy,
 		typename ThreadingPolicy, template<typename, typename, typename> typename... Sinks>
+	void logger<BufferLimits, LogExecutionPolicy, FlushPolicy, ThreadingPolicy, Sinks...>::raw(
+		const char* const message)
+	{
+		LogExecutionPolicy::template log<BufferLimits>(m_backend, message);
+	}
+
+	template<typename BufferLimits, typename LogExecutionPolicy, typename FlushPolicy,
+		typename ThreadingPolicy, template<typename, typename, typename> typename... Sinks>
 	template<typename... Args>
 	void logger<BufferLimits, LogExecutionPolicy, FlushPolicy, ThreadingPolicy, Sinks...>::info(
 		const details::log_message& log_msg, Args&&... args)

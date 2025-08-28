@@ -28,6 +28,18 @@ namespace lwlog
         }
     }
 
+    template<typename BufferLimits, typename ConcurrencyModelPolicy>
+    void synchronous_policy::log(backend<BufferLimits, ConcurrencyModelPolicy>& backend, const char* const message)
+    {
+        backend.message_buffer.reset();
+        backend.message_buffer.append(message);
+
+        for (const auto& sink : backend.sink_storage)
+        {
+            sink->sink_it(backend.message_buffer.c_str());
+        }
+    }
+
     template<typename OverflowPolicy, std::size_t Capacity, std::uint64_t ThreadAffinity>
     template<typename BufferLimits, typename ConcurrencyModelPolicy>
     struct asynchronous_policy<OverflowPolicy, Capacity, ThreadAffinity>::backend<
@@ -63,7 +75,11 @@ namespace lwlog
 
         for (const auto& sink : backend.sink_storage)
         {
-            if (sink->should_sink(item.log_level))
+            if (!item.meta.is_initialized())
+            {
+                sink->sink_it(backend.message_buffer.c_str());
+            }
+            else if (sink->should_sink(item.log_level))
             {
                 sink->sink_it({ backend.message_buffer.c_str(), item.log_level,
                     item.meta, backend.topics, item.topic_index });
@@ -130,6 +146,16 @@ namespace lwlog
 
             backend.queue.enqueue({ meta, message, log_level, true, buff_index, backend.topics.topic_index() });
         }
+
+        backend.has_work.test_and_set(std::memory_order_release);
+    }
+
+    template<typename OverflowPolicy, std::size_t Capacity, std::uint64_t ThreadAffinity>
+    template<typename BufferLimits, typename ConcurrencyModelPolicy>
+    void asynchronous_policy<OverflowPolicy, Capacity, ThreadAffinity>::log(
+        backend<BufferLimits, ConcurrencyModelPolicy>& backend, const char* const message)
+    {
+        backend.queue.enqueue({ {}, message, {}, {}, {}, {} });
 
         backend.has_work.test_and_set(std::memory_order_release);
     }

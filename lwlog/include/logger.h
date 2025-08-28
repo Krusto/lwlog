@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "policy/log_policy.h"
 #include "details/log_message.h"
@@ -36,6 +36,8 @@ namespace lwlog
 		std::vector<sink_ptr<BufferLimits>>& sinks();
 
 	public:
+		void raw(const char* const message);
+
 		template<typename... Args> void info(const details::log_message& log_msg, Args&&... args);
 		template<typename... Args> void warning(const details::log_message& log_msg, Args&&... args);
 		template<typename... Args> void error(const details::log_message& log_msg, Args&&... args);
