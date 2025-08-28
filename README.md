@@ -635,10 +635,10 @@ In the first function function overload:
 1. Set the current severity level to allow for level-based colors.
 2. Compile the log message using the pattern.
 3. Output the formatted message. You can utilize a writer class as shown in the example, or handle the writing directly within this function.
-4. Because of the static buffer nature of the logger, you need to reset the pattern in order to avoid old data from previous a previous log bleeding into the new log
+4. Because of the static buffer nature of the logger, you need to reset the pattern in order to avoid old data from previous a previous log bleeding into the new log.
 
 In the second function function overload:
-1. Output the message. Nothing more needs to be done, since raw logs do not keep log level, patterns, and meta data
+1. Output the message. Nothing more needs to be done, since raw logs do not keep log level, patterns, and meta data.
 ### Step 4: Handle Flushing (For Stream-Based Sinks)
 If your sink is stream-based (e.g., writing to stdout, stderr, or a file), you should also consider a flushing policy. While the flush policy needs to be provided as part of the interface, it might not be applicable if your sink sends data in a non-stream-based manner.
 ### Full Example
