@@ -522,7 +522,7 @@ int main()
 ##### Output
 ```active --- [19:44:50] [CONSOLE] [info]: First info message```
 ## Raw Logging
-You can also log raw messages without any formatting and meta data. Keep in mind that new line is not appended by default, so that should be done manually.
+You can also log raw messages without any formatting and metadata. This is particularly useful when you want to print a newline or a string of characters for separation, as shown in the following example, or you simply want to print without any pattern formatting. Keep in mind that new line is not appended by default, so that should be done manually.
 ```cpp
 #include "lwlog.h"
 
