@@ -67,7 +67,7 @@ namespace lwlog::details
         }
 
         m_storage[current_write_index] = std::move(item);
-        m_write_index.store(next, std::memory_order_release);
+        m_write_index.store(next_write_index, std::memory_order_release);
         m_mpsc_lock.clear(std::memory_order_release);
     }
 
