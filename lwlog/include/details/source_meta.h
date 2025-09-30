@@ -4,13 +4,13 @@
 #include <string_view>
 
 #if defined(_MSC_VER) && (_MSC_VER < 1929)
-	#define BUILTIN_LINE {}
-	#define BUILTIN_FILE {}
-	#define BUILTIN_FUNCTION {}
+#define BUILTIN_LINE {}
+#define BUILTIN_FILE {}
+#define BUILTIN_FUNCTION {}
 #else
-	#define BUILTIN_LINE __builtin_LINE()
-	#define BUILTIN_FILE __builtin_FILE()
-	#define BUILTIN_FUNCTION __builtin_FUNCTION()
+#define BUILTIN_LINE __builtin_LINE()
+#define BUILTIN_FILE __builtin_FILE()
+#define BUILTIN_FUNCTION __builtin_FUNCTION()
 #endif
 
 namespace lwlog::details
@@ -19,13 +19,13 @@ namespace lwlog::details
 	{
 	public:
 		constexpr source_meta() = default;
-		constexpr source_meta(std::uint32_t line, 
-			const char* const file, 
+		constexpr source_meta(std::uint32_t line,
+			const char* const file,
 			const char* const function);
 
 	public:
 		static constexpr source_meta current(
-			std::uint32_t line = BUILTIN_LINE, 
+			std::uint32_t line = BUILTIN_LINE,
 			const char* const file = BUILTIN_FILE,
 			const char* const function = BUILTIN_FUNCTION);
 

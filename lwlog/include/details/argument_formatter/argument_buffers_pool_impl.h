@@ -15,43 +15,55 @@ namespace lwlog::details
     template<typename BufferLimits>
     std::uint8_t argument_buffers_pool<BufferLimits>::acquire_args_buffer()
     {
-        std::uint8_t old_top{ m_args_buffers_free_top.load(std::memory_order_acquire) };
-        while (old_top > 0)
+        std::uint8_t top{ m_args_buffers_free_top.load(std::memory_order_acquire) };
+        while (top > 0) 
         {
-            if (m_args_buffers_free_top.compare_exchange_weak(old_top, old_top - 1, std::memory_order_acq_rel))
+            if (m_args_buffers_free_top.compare_exchange_weak(
+                top, static_cast<std::uint8_t>(top - 1),
+                std::memory_order_acq_rel, std::memory_order_acquire))
             {
-                return m_args_buffers_free_indices[old_top - 1];
+                const std::uint8_t slot_index{ m_args_buffers_free_indices[top - 1] };
+                const std::uint8_t slot_handle{ static_cast<std::uint8_t>(slot_index + 1) };
+
+                return slot_handle;
             }
         }
 
         return 0;
     }
 
+
     template<typename BufferLimits>
-    void argument_buffers_pool<BufferLimits>::release_args_buffer(std::uint8_t idx)
+    void argument_buffers_pool<BufferLimits>::release_args_buffer(std::uint8_t slot_handle)
     {
-        std::uint8_t old_top{ m_args_buffers_free_top.load(std::memory_order_acquire) };
-        while (old_top < static_cast<std::uint8_t>(BufferLimits::pool_size))
+        const std::uint8_t slot_index{ static_cast<std::uint8_t>(slot_handle - 1) };
+
+        std::uint8_t top{ m_args_buffers_free_top.load(std::memory_order_acquire) };
+
+        while (top < static_cast<std::uint8_t>(BufferLimits::pool_size)) 
         {
-            if (m_args_buffers_free_top.compare_exchange_weak(old_top, old_top + 1, std::memory_order_acq_rel))
+            m_args_buffers_free_indices[top] = slot_index;
+
+            if (m_args_buffers_free_top.compare_exchange_weak(
+                top, static_cast<std::uint8_t>(top + 1),
+                std::memory_order_acq_rel, std::memory_order_acquire))
             {
-                m_args_buffers_free_indices[old_top] = idx;
                 break;
             }
         }
     }
 
     template<typename BufferLimits>
-    char(&argument_buffers_pool<BufferLimits>::get_args_buffer(std::uint8_t idx))
+    char(&argument_buffers_pool<BufferLimits>::get_args_buffer(std::uint8_t slot_index))
         [BufferLimits::arg_count][BufferLimits::argument]
     {
-        return m_args_buffers[idx];
+        return m_args_buffers[slot_index];
     }
 
     template<typename BufferLimits>
-    const char(&argument_buffers_pool<BufferLimits>::get_args_buffer(std::uint8_t idx) const)
+    const char(&argument_buffers_pool<BufferLimits>::get_args_buffer(std::uint8_t slot_index) const)
         [BufferLimits::arg_count][BufferLimits::argument]
     {
-        return m_args_buffers[idx];
+        return m_args_buffers[slot_index];
     }
 }

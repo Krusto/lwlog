@@ -13,8 +13,8 @@ void* operator new(size_t size)
 int main()
 {
 	using buffer_limits = lwlog::memory_buffer_limits<
-		lwlog::pattern_limit<256>,
-        lwlog::message_limit<128>,
+		lwlog::pattern_limit<1024>,
+        lwlog::message_limit<1024>,
         lwlog::argument_limit<12>,
         lwlog::arg_count_limit<4>,
         lwlog::padding_limit<24>,
@@ -23,7 +23,7 @@ int main()
 
 	auto console = std::make_shared<
 		lwlog::logger<
-		lwlog::default_memory_buffer_limits,
+		buffer_limits,
 		lwlog::asynchronous_policy<
 			lwlog::default_overflow_policy,
 			lwlog::default_async_queue_size,
@@ -43,7 +43,7 @@ int main()
 		console->critical("First {} critical message {}");
 	}
 
-	std::cout << "Total allocations: " << allocation_count << "\n";
+
 
 	return 0;
 }

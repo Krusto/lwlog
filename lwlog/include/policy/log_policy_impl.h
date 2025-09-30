@@ -11,11 +11,11 @@ namespace lwlog
 
         if constexpr (sizeof...(args) > 0)
         {
-            std::uint8_t buffer_index{ 0 };
-            (details::convert_to_chars(backend.args_buffers[buffer_index++],
+            std::uint8_t arg_count{ 0 };
+            (details::convert_to_chars(backend.args_buffers[arg_count++],
                 BufferLimits::argument, std::forward<Args>(args)), ...);
 
-            details::format_args<BufferLimits>(backend.message_buffer, backend.args_buffers);
+            details::format_args<BufferLimits>(backend.message_buffer, backend.args_buffers, arg_count);
         }
 
         for (const auto& sink : backend.sink_storage)
@@ -52,6 +52,7 @@ namespace lwlog
         bool has_args{ false };
         std::uint8_t args_buffer_index{ 0 };
         std::uint8_t topic_index{ 0 };
+        std::uint8_t arg_count{ 0 };
     };
 
     template<typename OverflowPolicy, std::size_t Capacity, std::uint64_t ThreadAffinity>
@@ -59,16 +60,17 @@ namespace lwlog
     void asynchronous_policy<OverflowPolicy, Capacity, ThreadAffinity>::process_item(
         backend<BufferLimits, ConcurrencyModelPolicy>& backend)
     {
-        const auto& item{ backend.queue.dequeue() };
+        const auto item{ backend.queue.dequeue() };
 
         backend.message_buffer.reset();
         backend.message_buffer.append(item.message);
 
         if (item.has_args)
         {
-            const auto& args_buffer{ backend.arg_buffers_pool.get_args_buffer(item.args_buffer_index) };
+            const std::uint8_t slot_index{ static_cast<std::uint8_t>(item.args_buffer_index - 1) };
+            const auto& args_buffer{ backend.arg_buffers_pool.get_args_buffer(slot_index) };
 
-            details::format_args<BufferLimits>(backend.message_buffer, args_buffer);
+            details::format_args<BufferLimits>(backend.message_buffer, args_buffer, item.arg_count);
 
             backend.arg_buffers_pool.release_args_buffer(item.args_buffer_index);
         }
@@ -133,18 +135,28 @@ namespace lwlog
     {
         if constexpr (sizeof...(args) == 0)
         {
-            backend.queue.enqueue({ meta, message, log_level, false, 0, backend.topics.topic_index() });
+            backend.queue.enqueue({ meta, message, log_level, false, 0, backend.topics.topic_index(), 0 });
         }
         else
         {
-            const std::uint8_t buff_index{ backend.arg_buffers_pool.acquire_args_buffer() };
-            auto& args_buffer{ backend.arg_buffers_pool.get_args_buffer(buff_index) };
+            std::uint8_t slot_handle;
+            do {
+                slot_handle = backend.arg_buffers_pool.acquire_args_buffer();
 
-            std::uint8_t buffer_index{ 0 };
-            (details::convert_to_chars(args_buffer[buffer_index++],
+                if (slot_handle == 0) 
+                { 
+                    LWLOG_CPU_PAUSE(); 
+                }
+            } while (slot_handle == 0);
+
+            const std::uint8_t slot_index{ static_cast<std::uint8_t>(slot_handle - 1) };
+            auto& args_buffer{ backend.arg_buffers_pool.get_args_buffer(slot_index) };
+
+            std::uint8_t arg_count{ 0 };
+            (details::convert_to_chars(args_buffer[arg_count++],
                 BufferLimits::argument, std::forward<Args>(args)), ...);
 
-            backend.queue.enqueue({ meta, message, log_level, true, buff_index, backend.topics.topic_index() });
+            backend.queue.enqueue({ meta, message, log_level, true, slot_handle, backend.topics.topic_index(), arg_count });
         }
 
         backend.has_work.test_and_set(std::memory_order_release);
