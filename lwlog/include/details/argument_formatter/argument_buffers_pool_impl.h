@@ -38,17 +38,20 @@ namespace lwlog::details
     {
         const std::uint8_t slot_index{ static_cast<std::uint8_t>(slot_handle - 1) };
 
-        std::uint8_t top{ m_args_buffers_free_top.load(std::memory_order_acquire) };
-
-        while (top < static_cast<std::uint8_t>(BufferLimits::pool_size)) 
+        std::uint8_t old_top{ m_args_buffers_free_top.load(std::memory_order_acquire) };
+        for (;;)
         {
-            m_args_buffers_free_indices[top] = slot_index;
-
-            if (m_args_buffers_free_top.compare_exchange_weak(
-                top, static_cast<std::uint8_t>(top + 1),
-                std::memory_order_acq_rel, std::memory_order_acquire))
+            if (old_top == static_cast<std::uint8_t>(BufferLimits::pool_size))
             {
-                break;
+                return;
+            }
+
+            const std::uint8_t new_top{ static_cast<std::uint8_t>(old_top + 1) };
+            if (m_args_buffers_free_top.compare_exchange_weak(
+                old_top, new_top, std::memory_order_acq_rel, std::memory_order_acquire))
+            {
+                m_args_buffers_free_indices[old_top] = slot_index;
+                return;
             }
         }
     }

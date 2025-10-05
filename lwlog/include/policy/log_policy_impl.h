@@ -52,6 +52,7 @@ namespace lwlog
         bool has_args{ false };
         std::uint8_t args_buffer_index{ 0 };
         std::uint8_t topic_index{ 0 };
+        std::uint8_t arg_count{ 0 };
     };
 
     template<typename OverflowPolicy, std::size_t Capacity, std::uint64_t ThreadAffinity>
@@ -69,7 +70,7 @@ namespace lwlog
             const std::uint8_t slot_index{ static_cast<std::uint8_t>(item.args_buffer_index - 1) };
             const auto& args_buffer{ backend.arg_buffers_pool.get_args_buffer(slot_index) };
 
-            details::format_args<BufferLimits>(backend.message_buffer, args_buffer);
+            details::format_args<BufferLimits>(backend.message_buffer, args_buffer, item.arg_count);
 
             backend.arg_buffers_pool.release_args_buffer(item.args_buffer_index);
         }
@@ -156,7 +157,7 @@ namespace lwlog
             (details::convert_to_chars(args_buffer[arg_count++],
                 BufferLimits::argument, std::forward<Args>(args)), ...);
 
-            backend.queue.enqueue(meta, message, log_level, true, slot_handle, backend.topics.topic_index());
+            backend.queue.enqueue(meta, message, log_level, true, slot_handle, backend.topics.topic_index(), arg_count);
         }
 
         backend.has_work.test_and_set(std::memory_order_release);
