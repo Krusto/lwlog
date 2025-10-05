@@ -9,7 +9,7 @@ namespace lwlog::interface
 		virtual ~sink() = default;
 
 	public:
-		virtual void sink_it(const details::record<BufferLimits>&) = 0;
+		virtual void sink_it(details::record<BufferLimits>) = 0;
 		virtual void sink_it(std::string_view) = 0;
 
 	public:
