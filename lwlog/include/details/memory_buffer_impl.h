@@ -31,9 +31,11 @@ namespace lwlog::details
     template<std::size_t Capacity>
     void memory_buffer<Capacity>::append(const char* data, std::size_t size)
     {
-        if (m_size + size > m_capacity)
+        const std::size_t need{ m_size + size };
+        if (need > m_capacity)
         {
-            memory_buffer<Capacity>::grow(m_capacity * 1.5f);
+            const std::size_t scaled{ static_cast<std::size_t>(m_capacity * 1.5f) };
+            memory_buffer<Capacity>::grow(std::max(need, scaled));
         }
 
         std::memcpy(m_buffer + m_size, data, size);
@@ -49,9 +51,11 @@ namespace lwlog::details
     template<std::size_t Capacity>
     void memory_buffer<Capacity>::append(char ch)
     {
-        if (m_size + 1 > m_capacity)
+        const std::size_t need{ m_size + 1 };
+        if (need > m_capacity)
         {
-            memory_buffer<Capacity>::grow(m_capacity * 1.5f);
+            const std::size_t scaled{ static_cast<std::size_t>(m_capacity * 1.5f) };
+            memory_buffer<Capacity>::grow(std::max(need, scaled));
         }
 
         m_buffer[m_size++] = ch;
@@ -135,10 +139,14 @@ namespace lwlog::details
     template<std::size_t Capacity>
     const char* memory_buffer<Capacity>::c_str()
     {
-        if (m_size < m_capacity)
+        const std::size_t need{ m_size + 1 };
+        if (need > m_capacity)
         {
-            m_buffer[m_size] = '\0';
+            const std::size_t scaled{ static_cast<std::size_t>(m_capacity * 1.5f) };
+            memory_buffer<Capacity>::grow(std::max(need, scaled));
         }
+
+        m_buffer[m_size] = '\0';
 
         return m_buffer;
     }
@@ -163,30 +171,71 @@ namespace lwlog::details
             return;
         }
 
+        const std::size_t max_write{ buffer_size - 1 };
+
         if constexpr (std::is_same_v<T, bool>)
         {
             const char* const str_val{ value ? "true" : "false" };
-            const std::size_t value_size{ value ? static_cast<std::size_t>(4) : static_cast<std::size_t>(5) };
+            std::size_t value_size{ value ? static_cast<std::size_t>(4) : static_cast<std::size_t>(5) };
+            if (value_size > max_write) 
+            { 
+                value_size = max_write; 
+            }
 
             std::memcpy(buffer, str_val, value_size);
             buffer[value_size] = '\0';
         }
-        else if constexpr (std::is_arithmetic_v<T>)
+        else if constexpr (std::is_integral_v<T> && !std::is_same_v<T, bool>)
         {
-            const auto [ptr, ec]{ std::to_chars(buffer, buffer + buffer_size, value) };
-            buffer[ptr - buffer] = '\0';
+            const auto [ptr, ec] { std::to_chars(buffer, buffer + max_write, value) };
+            if (ec != std::errc{}) 
+            { 
+                buffer[0] = '\0'; 
+            }
+            else 
+            { 
+                *ptr = '\0'; 
+            }
         }
-        else if constexpr (std::is_same_v<T, std::string_view> || 
-            std::is_same_v<T, std::string>) 
+        else if constexpr (std::is_floating_point_v<T>)
+        {
+            const auto [ptr, ec] { std::to_chars(buffer, buffer + max_write, value, std::chars_format::general) };
+            if (ec != std::errc{}) 
+            { 
+                buffer[0] = '\0'; 
+            }
+            else 
+            { 
+                *ptr = '\0'; 
+            }
+        }
+        else if constexpr (std::is_same_v<T, std::string_view> ||
+            std::is_same_v<T, std::string>)
         {
             std::size_t value_size{ value.size() };
+            if (value_size > max_write) 
+            { 
+                value_size = max_write; 
+            }
+
             std::memcpy(buffer, value.data(), value_size);
             buffer[value_size] = '\0';
         }
         else if constexpr (std::is_same_v<std::decay_t<T>, const char*> ||
             std::is_same_v<std::decay_t<T>, char*>)
         {
+            if (!value) 
+            { 
+                buffer[0] = '\0'; 
+                return; 
+            }
+
             std::size_t value_size{ std::strlen(value) };
+            if (value_size > max_write) 
+            { 
+                value_size = max_write; 
+            }
+
             std::memcpy(buffer, value, value_size);
             buffer[value_size] = '\0';
         }

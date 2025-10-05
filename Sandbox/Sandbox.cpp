@@ -40,7 +40,10 @@ int main()
 
 	{
 		Timer timer("timer");
-		console->critical("First {} critical message {}");
+		for (int i = 0; i < 10000; ++i)
+		{
+			console->critical("First critical message {}", i);
+		}
 	}
 
 	return 0;
