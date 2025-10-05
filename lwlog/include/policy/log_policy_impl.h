@@ -15,7 +15,7 @@ namespace lwlog
             (details::convert_to_chars(backend.args_buffers[arg_count++],
                 BufferLimits::argument, std::forward<Args>(args)), ...);
 
-            details::format_args<BufferLimits>(backend.message_buffer, backend.args_buffers);
+            details::format_args<BufferLimits>(backend.message_buffer, backend.args_buffers, arg_count);
         }
 
         for (const auto& sink : backend.sink_storage)

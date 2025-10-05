@@ -61,19 +61,24 @@ namespace lwlog::details
     void memory_buffer<Capacity>::replace(std::size_t to_replace_pos, std::size_t to_replace_size,
         const char* const __restrict replace_with, std::size_t replace_with_size)
     {
-        if(m_size - to_replace_size + replace_with_size > m_capacity)
+        const std::size_t new_size{ m_size - to_replace_size + replace_with_size };
+
+        if (new_size > m_capacity)
         {
-            memory_buffer<Capacity>::grow(m_capacity * 1.5f);
+            const std::size_t scaled{ static_cast<std::size_t>(m_capacity * 1.5f) };
+            const std::size_t target{ new_size };
+            memory_buffer<Capacity>::grow(std::max(scaled, target));
         }
 
         char* const __restrict shift_dest{ m_buffer + to_replace_pos + replace_with_size };
         const char* const __restrict shift_source{ m_buffer + to_replace_pos + to_replace_size };
         const std::size_t shift_size{ m_size - (to_replace_pos + to_replace_size) };
 
-        std::memcpy(shift_dest, shift_source, shift_size);
+        std::memmove(shift_dest, shift_source, shift_size);
+
         std::memcpy(m_buffer + to_replace_pos, replace_with, replace_with_size);
 
-        m_size = m_size - to_replace_size + replace_with_size;
+        m_size = new_size;
     }
 
     template<std::size_t Capacity>
@@ -153,6 +158,11 @@ namespace lwlog::details
     template<typename T>
     void convert_to_chars(char* const __restrict buffer, std::size_t buffer_size, const T& value)
     {
+        if (buffer_size == 0)
+        {
+            return;
+        }
+
         if constexpr (std::is_same_v<T, bool>)
         {
             const char* const str_val{ value ? "true" : "false" };
