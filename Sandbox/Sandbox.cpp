@@ -15,7 +15,7 @@ int main()
 	using buffer_limits = lwlog::memory_buffer_limits<
 		lwlog::pattern_limit<1024>,
         lwlog::message_limit<1024>,
-        lwlog::argument_limit<12>,
+        lwlog::argument_limit<64>,
         lwlog::arg_count_limit<4>,
         lwlog::padding_limit<24>,
         lwlog::conv_limit<64>
@@ -38,11 +38,13 @@ int main()
 	console->set_level_filter(lwlog::level::info | lwlog::level::debug | lwlog::level::critical);
 	console->set_pattern("{file} .red([%T] [%n]) .dark_green([:^12{level}]): .cyan(%v) TEXT");
 
+	std::string test{ "/SOMELONG/PATH/TO/BE/SHOWN/PLEASE/WORK" };
+
 	{
 		Timer timer("timer");
 		for (int i = 0; i < 10000; ++i)
 		{
-			console->critical("First critical message {}", i);
+			console->critical("{} First critical message {}", i, test);
 		}
 	}
 
