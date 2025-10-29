@@ -15,7 +15,7 @@ namespace lwlog::sinks
 
 	public:
 		file_sink() = default;
-		explicit file_sink(std::string_view path);
+		explicit file_sink(std::string_view path, details::stream_mode mode = details::stream_mode::append);
 
 	public:
 		void sink_it(const details::record<BufferLimits>& record) override;
@@ -23,8 +23,8 @@ namespace lwlog::sinks
 	};
 
 	template<typename BufferLimits, typename FlushPolicy, typename ThreadingPolicy>
-	file_sink<BufferLimits, FlushPolicy, ThreadingPolicy>::file_sink(std::string_view path)
-		: details::stream_writer<FlushPolicy>(path)
+	file_sink<BufferLimits, FlushPolicy, ThreadingPolicy>::file_sink(std::string_view path, details::stream_mode mode)
+		: details::stream_writer<FlushPolicy>(path, mode)
 	{}
 
 	template<typename BufferLimits, typename FlushPolicy, typename ThreadingPolicy>

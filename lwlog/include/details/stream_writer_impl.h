@@ -5,22 +5,23 @@
 namespace lwlog::details
 {
 	template<typename FlushPolicy>
-	stream_writer<FlushPolicy>::stream_writer(std::FILE* stream)
+	stream_writer<FlushPolicy>::stream_writer(std::FILE* stream,stream_mode mode)
 		: m_stream{ stream }
 	{
+        (void)mode;
 		std::setvbuf(m_stream, nullptr, _IOFBF, FlushPolicy::buffer_size);
 	}
 
 	template<typename FlushPolicy>
-	stream_writer<FlushPolicy>::stream_writer(std::string_view path)
+	stream_writer<FlushPolicy>::stream_writer(std::string_view path,stream_mode mode )
 		: m_path{ path }
 	{
 		if (!std::filesystem::exists(m_path.parent_path()))
 		{
 			std::filesystem::create_directory(m_path.parent_path());
 		}
-
-		m_stream = std::fopen(m_path.string().data(), "a");
+        const char * mode_str = mode == stream_mode::append ? "a" : "w";
+		m_stream = std::fopen(m_path.string().data(), mode_str);
 
 		if (m_stream != nullptr)
 		{
