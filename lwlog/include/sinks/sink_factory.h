@@ -1,9 +1,9 @@
 #pragma once
 #include "sink_interface.h"
+#include <memory>
 
 namespace lwlog::sinks
 {
-
     template <typename BufferLimits, typename Sink>
     class sink_factory
     {

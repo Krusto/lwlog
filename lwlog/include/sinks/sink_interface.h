@@ -3,6 +3,10 @@
 #include "details/pattern/attribute.h"
 #include "level.h"
 
+#include "details/pattern/attribute.h"
+#include "details/record.h"
+#include "level.h"
+
 namespace lwlog::interface
 {
     template <typename BufferLimits>
